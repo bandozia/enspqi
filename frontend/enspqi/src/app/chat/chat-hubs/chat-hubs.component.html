@@ -1,0 +1,10 @@
+<h1>chat hubs</h1>
+<h3>Test for general chat</h3>
+
+<p *ngFor="let conn of activeConnections()">
+id: {{conn.id}} | hub: {{conn.url}}
+</p>
+
+<button (click)="connectToHub()">connect</button>
+
+<button (click)="sendToAll()">test send</button>
