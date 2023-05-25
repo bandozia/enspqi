@@ -7,8 +7,7 @@ public static class Routes
     public static RouteGroupBuilder MapGeneralRooms(this RouteGroupBuilder builder)
     {
         builder.MapGet("/", GetAllRooms);
-        builder.MapPost("/", CreateRoom);
-
+        
         return builder;
     }
 }

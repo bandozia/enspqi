@@ -1,10 +1,33 @@
-<h1>chat hubs</h1>
-<h3>Test for general chat</h3>
+<h1>Hubs test</h1>
 
-<p *ngFor="let conn of activeConnections()">
-id: {{conn.id}} | hub: {{conn.url}}
-</p>
 
-<button (click)="connectToHub()">connect</button>
+<div *ngIf="!activeConnection(); else connected">
+    <input placeholder="display name" #displayName />
+    <button (click)="connectToHub(displayName.value)">connect to general hub</button>
+</div>
 
-<button (click)="sendToAll()">test send</button>
+<ng-template #connected>
+    <div>
+        <h3>available rooms</h3>
+        <div>
+            <div *ngFor="let room of rooms()">
+                <label>{{room.name}}</label>
+                <div *ngIf="room.isParticipant; else joinInRoom">
+                    <input #msgText />
+                    <button (click)="sendToRoom(room.id, msgText.value)">send</button>
+                </div>
+                <ng-template #joinInRoom>
+                    <button (click)="join(room.id)">join</button>
+                </ng-template>
+            </div>
+        </div>
+
+        <div>
+            <input placeholder="room name" #roomName />
+            <button (click)="createRoomAndJoin(roomName.value)">create and join</button>
+        </div>
+    </div>
+
+    <br />
+    <button (click)="sendToAll()">test send</button>
+</ng-template>

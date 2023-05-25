@@ -9,7 +9,8 @@ builder.Logging.AddConsole();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors();
-builder.Services.AddDistributedMemoryCache();
+
+builder.Services.AddMemoryStorage();
 
 builder.Services.AddSignalR();
 

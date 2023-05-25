@@ -7,15 +7,28 @@ import { ChatService } from '../chat.service';
 })
 export class ChatHubsComponent {
 
-  activeConnections = this.chatService.activeConnections;
-  
+  activeConnection = this.chatService.activeConnection;
+  rooms = this.chatService.rooms;
+
   constructor(private chatService: ChatService) {}
   
-  async connectToHub() {      
-    await this.chatService.connectTo("http://localhost:5104/chat/general");
+  connectToHub(displayName: string) {      
+    this.chatService.connectTo("http://localhost:5104/chat/general", displayName);
   }
 
-  async sendToAll() {
-    await this.chatService.sendToAll("test test", "http://localhost:5104/chat/general")
+  createRoomAndJoin(name: string) {
+    this.chatService.createAndJoin(name)
+  }
+  
+  join(roomId: string) {
+    this.chatService.join(roomId)
+  }
+
+  sendToAll() {
+    this.chatService.sendToAll("test test")    
+  }
+
+  sendToRoom(roomId: string, msg: string) {
+    this.chatService.sendToRoom(roomId, msg)
   }
 }

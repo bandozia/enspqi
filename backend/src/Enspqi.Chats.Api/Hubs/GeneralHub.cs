@@ -1,38 +1,69 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Caching.Distributed;
+﻿using Enspqi.Chats.Api.Services;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Enspqi.Chats.Api.Hubs;
 
 public class GeneralHub : Hub<IChatClient>
-{
-    private readonly ILogger<GeneralHub> _logger;
-    private readonly IDistributedCache _cache;
+{   
+    private readonly IStorageService _storage;
 
-    public GeneralHub(ILogger<GeneralHub> logger, IDistributedCache cache)
-    {
-        _logger = logger;
-        _cache = cache;
+    public GeneralHub(IStorageService storage)
+    {        
+        _storage = storage;
     }
 
-    public override Task OnConnectedAsync()
+    public override async Task OnConnectedAsync()
+    {   
+        var displayName = Context.GetHttpContext()?.Request.Query["displayName"].FirstOrDefault();
+
+        if (displayName == null)
+        {
+            Context.Abort();
+            throw new InvalidOperationException("display name not provided");
+        }
+
+        await _storage.Set(new ConnectedUser(Context.ConnectionId, displayName, Context.ConnectionId));
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var id = Context.ConnectionId;
-        var user = Context.User;
+        await _storage.Delete<ConnectedUser>(Context.ConnectionId);
+    }
+
+    public async Task Join(string roomId)
+    {
+        var group = await _storage.Get<Room>(roomId) 
+            ?? throw new InvalidOperationException("Group not exist");
+
+        var user = await _storage.Get<ConnectedUser>(Context.ConnectionId);
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, group.Name);
+        await Clients.OthersInGroup(group.Name).UserJoinedToRoom(user!.DisplayName, group.Id);
+    }
+
+    public async Task<Room> CreateAndJoin(string roomName)
+    {        
+        // TODO: check if the name already exists
+        var newRoom = new Room(Guid.NewGuid().ToString(), roomName);
         
-                        
-        _logger.LogInformation("client connected");
-        return base.OnConnectedAsync();
-    }
-
-    public override Task OnDisconnectedAsync(Exception? exception)
-    {
-        _logger.LogInformation("client disconnected");
-        return base.OnDisconnectedAsync(exception);
+        await _storage.Set(newRoom);
+        await Groups.AddToGroupAsync(Context.ConnectionId, newRoom.Name);
+        await Clients.Others.NewRoomCreated(newRoom);
+                
+        return newRoom;
     }
 
     public async Task SendToAll(string msg)
     {
-        await Clients.All.ReceiveGeneral(msg);
-        //await Clients.All.SendAsync("messageReceived", msg);
+        // TODO: only for admins
+        await Clients.All.ReceiveGeneral(msg);        
+    }
+
+    public async Task SendToRoom(string roomId, string msg)
+    {
+        var user = await _storage.Get<ConnectedUser>(Context.ConnectionId);
+        var group = await _storage.Get<Room>(roomId) ?? throw new InvalidOperationException("Group not exist");
+
+        await Clients.OthersInGroup(group.Name).ReceiveInRoom(roomId, user!.DisplayName, msg);
     }
 }
